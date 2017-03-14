@@ -101,15 +101,13 @@ ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-tes
 #### Options
 * **volumePath**
 
-	- a path to a virtuozzo storage directory where ploop will be created
-
+  a path to a virtuozzo storage directory where ploop will be created
 * **volumeId**
 
-	- an unique name for a ploop image
+   an unique name for a ploop image
+* **size**=[0-9]*[KMG]
 
-* **size**
-
-	- size of the volume
+   size of the volume
 
 * **vzsReplicas**=normal[:min]|/X
 
