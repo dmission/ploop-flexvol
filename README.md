@@ -98,5 +98,59 @@ You can verify the ploop volume was created by finding the node where your pod w
 ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-test
 ```
 
+#### Options
+* **volumePath**
 
+	- a path to a virtuozzo storage directory where ploop will be created
 
+* **volumeId**
+
+	- an unique name for a ploop image
+
+* **size**
+
+	- size of the volume
+
+* **vzsReplicas**=normal[:min]|/X
+
+     Replication level specification:
+
+     _normal_   The number of replicas to maintain.
+
+     _minimum_  The minimum number of replicas required to write a file (optional).
+
+     _/X_       Write tolerance (normal-minimum). The number of replicas allowed to go offline
+                 provided that the client is still allowed to write the file.
+
+     The number of replicas must be in the range 1-64.
+
+* **vzsEencoding**=M+N[/X]
+
+     Encoding specification:
+
+     _M_   The stripe-depth.
+
+     _N_   The number of parity blocks.
+
+     _X_   The write tolerance. The number of replicas allowed to go offline
+                 provided that the client is still allowed to write the file.
+
+* **vzsFailureDomain**=disk|host|rack|row|room
+
+    Failure domain for file replicas.
+
+    This parameter controls how replicas are distributed across CSs in the cluster:
+
+    _disk_ - place no more then 1 replica per disk/CS
+
+    _host_ - place no more then 1 replica per host (default)
+
+    _rack_ - place no more then 1 replica per RACK
+
+    _row_  - place no more then 1 replica per ROW
+
+    _room_ - place no more then 1 replica per ROOM
+
+* **vzsTier**=0-3
+
+     Storage tier for file replicas.

@@ -4,7 +4,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/avagin/ploop-flexvol/volume"
+	"github.com/jaxxstorm/ploop-flexvol/volume"
 	"github.com/jaxxstorm/flexvolume"
 	"github.com/kolyshkin/goploop-cli"
 	"github.com/urfave/cli"
