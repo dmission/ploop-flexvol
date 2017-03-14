@@ -81,7 +81,7 @@ func Create(options map[string]string) error {
 
 		if err != nil {
 			os.RemoveAll(ploop_path)
-			return err
+			return fmt.Errorf("Unable to set %s to %s: %v", attr, v, err)
 		}
 	}
 
