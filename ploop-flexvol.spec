@@ -12,7 +12,7 @@
 
 %global provider        github
 %global provider_tld    com
-%global project         jaxxstorm
+%global project         virtuozzo
 %global repo            ploop-flexvol
 %global bin             ploop
 # https://github.com/kolyshkin/docker-volume-ploop
@@ -46,10 +46,10 @@ BuildRequires: git
 %build
 ls -alh
 mkdir -p %{buildroot}/usr/libexec/kubernetes/kubelet-plugins/volume/exec/%{project}~%{bin}
-mkdir -p src/github.com/jaxxstorm
-ln -s ../../../ src/github.com/jaxxstorm/ploop-flexvol
+mkdir -p src/github.com/virtuozzo
+ln -s ../../../ src/github.com/virtuozzo/ploop-flexvol
 export GOPATH=$(pwd):%{gopath}
-cd src/github.com/jaxxstorm/ploop-flexvol
+cd src/github.com/virtuozzo/ploop-flexvol
 go build -o %{bin} main.go
 
 
