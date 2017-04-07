@@ -10,35 +10,12 @@ Kubernetes FlexVolumes are currently in Alpha state, so this plugin is as well. 
 
 ### Build
 
-This project uses [glide](http://glide.readthedocs.io/en/latest/) so the easiest way to install your dependencies is using that.
-
-Run `glide up` to install your dependencies.
-
 ```
-$ glide up
-[INFO]  Downloading dependencies. Please wait...
-[INFO]  --> Fetching updates for github.com/dustin/go-humanize.
-[INFO]  --> Fetching updates for github.com/urfave/cli.
-[INFO]  --> Fetching updates for github.com/kolyshkin/goploop-cli.
-[INFO]  --> Fetching updates for github.com/jaxxstorm/flexvolume.
-[INFO]  --> Detected semantic version. Setting version for github.com/urfave/cli to v1.19.1.
-[INFO]  Resolving imports
-[INFO]  Downloading dependencies. Please wait...
-[INFO]  Setting references for remaining imports
-[INFO]  Exporting resolved dependencies...
-[INFO]  --> Exporting github.com/dustin/go-humanize
-[INFO]  --> Exporting github.com/jaxxstorm/flexvolume
-[INFO]  --> Exporting github.com/kolyshkin/goploop-cli
-[INFO]  --> Exporting github.com/urfave/cli
-[INFO]  Replacing existing vendor dependencies
-[INFO]  Versions did not change. Skipping glide.lock update.
-[INFO]  Project relies on 4 dependencies.
-```
-
-Then build the binary:
-
-```
-go build -o ploop main.go
+mkdir -p src/github.com/virtuozzo
+ln -s ../../../ src/github.com/virtuozzo/ploop-flexvol
+export GOPATH=`pwd`
+cd src/github.com/virtuozzo/ploop-flexvol
+make
 ```
 
 ### Installing
@@ -48,13 +25,13 @@ In order to use the flexvolume driver, you'll need to install it on every node y
 You need a directory for the volume driver vendor, so create it:
 
 ```
-mkdir -p /usr/libexec/kubernetes/kubelet-plugins/volume/exec/jaxxstorm~ploop
+mkdir -p /usr/libexec/kubernetes/kubelet-plugins/volume/exec/virtuozzo~ploop
 ```
 
 Then drop the binary in there:
 
 ```
-mv ploop /usr/libexec/kubernetes/kubelet-plugins/volume/exec/jaxxstorm~ploop/ploop
+mv ploop /usr/libexec/kubernetes/kubelet-plugins/volume/exec/virtuozzo~ploop/ploop
 ```
 
 You can now use ploops as usual!
@@ -82,7 +59,7 @@ spec:
   volumes:
   - name: test
     flexVolume:
-      driver: "jaxxstorm/ploop" # this must match your vendor dir
+      driver: "virtuozzo/ploop" # this must match your vendor dir
       options:
         volumeId: "golang-ploop-test"
         size: "10G"
