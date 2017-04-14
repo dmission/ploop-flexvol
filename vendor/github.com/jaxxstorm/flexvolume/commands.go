@@ -6,6 +6,12 @@ import (
 	"github.com/urfave/cli"
 )
 
+func CommandNotFound(c *cli.Context, command string) {
+	handle(Response{
+		Status: StatusNotSupported,
+	})
+}
+
 func Commands(fv FlexVolume) []cli.Command {
 	return []cli.Command{
 		{
@@ -27,6 +33,16 @@ func Commands(fv FlexVolume) []cli.Command {
 				return handle(fv.Attach(opts))
 			},
 		},
+		{Name: "getvolumename",
+			Usage: "Get a cluster wide unique volume name for the volume",
+			Action: func(c *cli.Context) error {
+				var opts map[string]string
+				if err := json.Unmarshal([]byte(c.Args().Get(0)), &opts); err != nil {
+					return err
+				}
+				return handle(fv.GetVolumeName(opts))
+			},
+		},
 		{
 			Name:  "detach",
 			Usage: "Detach the volume",
@@ -35,7 +51,14 @@ func Commands(fv FlexVolume) []cli.Command {
 			},
 		},
 		{
-			Name:  "mount",
+			Name:  "unmountdevice",
+			Usage: "Detach the volume",
+			Action: func(c *cli.Context) error {
+				return handle(fv.UnmountDevice(c.Args().Get(0)))
+			},
+		},
+		{
+			Name:  "mountdevice",
 			Usage: "Mount the volume",
 			Action: func(c *cli.Context) error {
 				var opts map[string]string
@@ -44,14 +67,7 @@ func Commands(fv FlexVolume) []cli.Command {
 					return err
 				}
 
-				return handle(fv.Mount(c.Args().Get(0), c.Args().Get(1), opts))
-			},
-		},
-		{
-			Name:  "unmount",
-			Usage: "Mount the volume",
-			Action: func(c *cli.Context) error {
-				return handle(fv.Unmount(c.Args().Get(0)))
+				return handle(fv.MountDevice(c.Args().Get(0), opts))
 			},
 		},
 	}

@@ -2,12 +2,12 @@ package main
 
 import (
 	"os"
-	"syscall"
+	"strings"
 
 	"github.com/jaxxstorm/flexvolume"
-	"github.com/virtuozzo/ploop-flexvol/volume"
 	"github.com/kolyshkin/goploop-cli"
 	"github.com/urfave/cli"
+	"github.com/virtuozzo/ploop-flexvol/volume"
 )
 
 func main() {
@@ -15,6 +15,7 @@ func main() {
 	app.Name = "ploop flexvolume"
 	app.Usage = "Mount ploop volumes in kubernetes using the flexvolume driver"
 	app.Commands = flexvolume.Commands(Ploop{})
+	app.CommandNotFound = flexvolume.CommandNotFound
 	app.Authors = []cli.Author{
 		cli.Author{
 			Name: "Lee Briggs",
@@ -30,6 +31,28 @@ func (p Ploop) Init() flexvolume.Response {
 	return flexvolume.Response{
 		Status:  flexvolume.StatusSuccess,
 		Message: "Ploop is available",
+	}
+}
+
+func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
+	if options["volumePath"] == "" {
+		return flexvolume.Response{
+			Status:     flexvolume.StatusFailure,
+			Message:    "Must specify a volume path",
+			VolumeName: "unknown",
+		}
+	}
+
+	if options["volumeId"] == "" {
+		return flexvolume.Response{
+			Status:  flexvolume.StatusFailure,
+			Message: "Must specify a volume id",
+		}
+	}
+
+	return flexvolume.Response{
+		Status:     flexvolume.StatusSuccess,
+		VolumeName: options["volumePath"] + "/" + options["volumeId"],
 	}
 }
 
@@ -71,13 +94,27 @@ func (p Ploop) Attach(options map[string]string) flexvolume.Response {
 	}
 }
 
-func (p Ploop) Detach(device string) flexvolume.Response {
+func (p Ploop) Detach(volumeName string) flexvolume.Response {
 
-	if err := ploop.UmountByDevice(device); err != nil {
+	device := strings.Replace(volumeName, "~", "/", -1)
+
+	// open the disk descriptor first
+	volume, err := ploop.Open(device + "/" + "DiskDescriptor.xml")
+	if err != nil {
 		return flexvolume.Response{
 			Status:  flexvolume.StatusFailure,
-			Message: "Unable to detach ploop volume",
-			Device:  device,
+			Message: err.Error(),
+		}
+	}
+	defer volume.Close()
+
+	if m, _ := volume.IsMounted(); m {
+		if err := volume.Umount(); err != nil {
+			return flexvolume.Response{
+				Status:  flexvolume.StatusFailure,
+				Message: "Unable to detach ploop volume",
+				Device:  device,
+			}
 		}
 	}
 	return flexvolume.Response{
@@ -87,14 +124,13 @@ func (p Ploop) Detach(device string) flexvolume.Response {
 	}
 }
 
-func (p Ploop) Mount(target, device string, options map[string]string) flexvolume.Response {
+func (p Ploop) MountDevice(target string, options map[string]string) flexvolume.Response {
 	// make the target directory we're going to mount to
 	err := os.MkdirAll(target, 0755)
 	if err != nil {
 		return flexvolume.Response{
 			Status:  flexvolume.StatusFailure,
 			Message: err.Error(),
-			Device:  device,
 		}
 	}
 
@@ -104,7 +140,6 @@ func (p Ploop) Mount(target, device string, options map[string]string) flexvolum
 		return flexvolume.Response{
 			Status:  flexvolume.StatusFailure,
 			Message: err.Error(),
-			Device:  device,
 		}
 	}
 	defer volume.Close()
@@ -131,40 +166,27 @@ func (p Ploop) Mount(target, device string, options map[string]string) flexvolum
 		return flexvolume.Response{
 			Status:  flexvolume.StatusSuccess,
 			Message: "Successfully mounted the ploop volume",
-			Device:  device,
 		}
 	} else {
 
 		return flexvolume.Response{
 			Status:  flexvolume.StatusSuccess,
 			Message: "Ploop volume already mounted",
-			Device:  device,
 		}
 
 	}
 }
 
-func (p Ploop) Unmount(mount string) flexvolume.Response {
-
-	if err := syscall.Unmount(mount, 0x2); err != nil {
+func (p Ploop) UnmountDevice(mount string) flexvolume.Response {
+	if err := ploop.UmountByMount(mount); err != nil {
 		return flexvolume.Response{
 			Status:  flexvolume.StatusFailure,
-			Message: "Unable to unmount ploop volume from pod",
-			Device:  mount,
-		}
-	}
-
-	if err := os.Remove(mount); err != nil {
-		return flexvolume.Response{
-			Status:  flexvolume.StatusFailure,
-			Message: "Unable to remove stale directory from pod",
-			Device:  mount,
+			Message: err.Error(),
 		}
 	}
 
 	return flexvolume.Response{
 		Status:  flexvolume.StatusSuccess,
 		Message: "Successfully unmounted the ploop volume",
-		Device:  mount,
 	}
 }
