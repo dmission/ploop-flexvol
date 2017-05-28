@@ -66,9 +66,9 @@ spec:
         volumePath: "/vstorage/storage_pool/kubernetes"
 ```
 
-This will create a ploop volume `/vstorage/storage_pool/kubernetes/golang-ploop-test`. The block device which will be mounted will be at `/vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-test` and the `DiskDescriptor.xml` will be located at /vstorage/storage_pool/kubernetes/golang-ploop-test/DiskDescriptior.xml`
+This will mount a block device from a ploop image located at `/vstorage/storage_pool/kubernetes/golang-ploop-test` directory.
 
-You can verify the ploop volume was created by finding the node where your pod was scheduled by running `ploop list`:
+You can verify the ploop volume was mounted by finding the node where your pod was scheduled by running `ploop list`:
 
 ```
 # ploop list
@@ -78,7 +78,7 @@ ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-tes
 #### Options
 * **volumePath**
 
-  a path to a virtuozzo storage directory where ploop will be created
+  a path to a virtuozzo storage directory where ploop image is located
 * **volumeId**
 
    an unique name for a ploop image

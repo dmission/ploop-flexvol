@@ -7,7 +7,6 @@ import (
 	"github.com/jaxxstorm/flexvolume"
 	"github.com/kolyshkin/goploop-cli"
 	"github.com/urfave/cli"
-	"github.com/virtuozzo/ploop-flexvol/volume"
 )
 
 func main() {
@@ -75,22 +74,14 @@ func (p Ploop) Attach(options map[string]string) flexvolume.Response {
 	if _, err := os.Stat(options["volumePath"] + "/" + options["volumeId"] + "/" + "DiskDescriptor.xml"); err == nil {
 		return flexvolume.Response{
 			Status:  flexvolume.StatusSuccess,
-			Message: "Volume already exists",
+			Message: "Volume is found",
 			Device:  options["volumePath"] + "/" + options["volumeId"],
 		}
 	}
 
-	if err := volume.Create(options); err != nil {
-		return flexvolume.Response{
-			Status:  flexvolume.StatusFailure,
-			Message: err.Error(),
-		}
-	}
-
 	return flexvolume.Response{
-		Status:  flexvolume.StatusSuccess,
-		Message: "Successfully attached the ploop volume",
-		Device:  options["volumePath"] + "/" + options["volumeId"] + "/" + options["volumeId"],
+		Status:  flexvolume.StatusFailure,
+		Message: "Volume does not exist",
 	}
 }
 
