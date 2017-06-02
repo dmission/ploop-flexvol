@@ -10,10 +10,8 @@ const (
 
 type FlexVolume interface {
 	Init() Response
-	Attach(map[string]string) Response
-	Detach(string) Response
-	MountDevice(string, map[string]string) Response
-	UnmountDevice(string) Response
+	Mount(string, map[string]string) Response
+	Unmount(string) Response
 	GetVolumeName(map[string]string) Response
 }
 

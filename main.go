@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"strings"
 
 	"github.com/jaxxstorm/flexvolume"
 	"github.com/kolyshkin/goploop-cli"
@@ -19,8 +18,11 @@ func main() {
 		cli.Author{
 			Name: "Lee Briggs",
 		},
+		cli.Author{
+			Name: "Virtuozzo",
+		},
 	}
-	app.Version = "0.1a"
+	app.Version = "0.2a"
 	app.Run(os.Args)
 }
 
@@ -55,67 +57,7 @@ func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 	}
 }
 
-func (p Ploop) Attach(options map[string]string) flexvolume.Response {
-
-	if options["volumePath"] == "" {
-		return flexvolume.Response{
-			Status:  flexvolume.StatusFailure,
-			Message: "Must specify a volume path",
-		}
-	}
-
-	if options["volumeId"] == "" {
-		return flexvolume.Response{
-			Status:  flexvolume.StatusFailure,
-			Message: "Must specify a volume id",
-		}
-	}
-
-	if _, err := os.Stat(options["volumePath"] + "/" + options["volumeId"] + "/" + "DiskDescriptor.xml"); err == nil {
-		return flexvolume.Response{
-			Status:  flexvolume.StatusSuccess,
-			Message: "Volume is found",
-			Device:  options["volumePath"] + "/" + options["volumeId"],
-		}
-	}
-
-	return flexvolume.Response{
-		Status:  flexvolume.StatusFailure,
-		Message: "Volume does not exist",
-	}
-}
-
-func (p Ploop) Detach(volumeName string) flexvolume.Response {
-
-	device := strings.Replace(volumeName, "~", "/", -1)
-
-	// open the disk descriptor first
-	volume, err := ploop.Open(device + "/" + "DiskDescriptor.xml")
-	if err != nil {
-		return flexvolume.Response{
-			Status:  flexvolume.StatusFailure,
-			Message: err.Error(),
-		}
-	}
-	defer volume.Close()
-
-	if m, _ := volume.IsMounted(); m {
-		if err := volume.Umount(); err != nil {
-			return flexvolume.Response{
-				Status:  flexvolume.StatusFailure,
-				Message: "Unable to detach ploop volume",
-				Device:  device,
-			}
-		}
-	}
-	return flexvolume.Response{
-		Status:  flexvolume.StatusSuccess,
-		Message: "Successfully detached the ploop volume",
-		Device:  device,
-	}
-}
-
-func (p Ploop) MountDevice(target string, options map[string]string) flexvolume.Response {
+func (p Ploop) Mount(target string, options map[string]string) flexvolume.Response {
 	// make the target directory we're going to mount to
 	err := os.MkdirAll(target, 0755)
 	if err != nil {
@@ -168,7 +110,7 @@ func (p Ploop) MountDevice(target string, options map[string]string) flexvolume.
 	}
 }
 
-func (p Ploop) UnmountDevice(mount string) flexvolume.Response {
+func (p Ploop) Unmount(mount string) flexvolume.Response {
 	if err := ploop.UmountByMount(mount); err != nil {
 		return flexvolume.Response{
 			Status:  flexvolume.StatusFailure,
