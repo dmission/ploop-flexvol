@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"os"
+	"syscall"
 
 	"github.com/jaxxstorm/flexvolume"
 	"github.com/kolyshkin/goploop-cli"
 	"github.com/urfave/cli"
+	"github.com/virtuozzo/ploop-flexvol/vstorage"
 )
 
 func main() {
@@ -28,6 +31,8 @@ func main() {
 
 type Ploop struct{}
 
+const WorkingDir = "/var/run/ploop-flexvol/"
+
 func (p Ploop) Init() flexvolume.Response {
 	return flexvolume.Response{
 		Status:  flexvolume.StatusSuccess,
@@ -35,15 +40,25 @@ func (p Ploop) Init() flexvolume.Response {
 	}
 }
 
-func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
-	if options["volumePath"] == "" {
-		return flexvolume.Response{
-			Status:     flexvolume.StatusFailure,
-			Message:    "Must specify a volume path",
-			VolumeName: "unknown",
-		}
+func (p Ploop) path(options map[string]string) string {
+	path := "/"
+	if options["volumePath"] != "" {
+		path += options["volumePath"] + "/"
 	}
+	path += options["volumeId"]
+	return path
+}
 
+func (p Ploop) id(options map[string]string) string {
+	id := ""
+	if options["clusterName"] != "" {
+		id += options["clusterName"] + ":"
+	}
+	id += p.path(options)
+	return id
+}
+
+func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 	if options["volumeId"] == "" {
 		return flexvolume.Response{
 			Status:  flexvolume.StatusFailure,
@@ -53,8 +68,42 @@ func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 
 	return flexvolume.Response{
 		Status:     flexvolume.StatusSuccess,
-		VolumeName: options["volumePath"] + "/" + options["volumeId"],
+		VolumeName: p.id(options),
 	}
+}
+
+func prepareVstorage(options map[string]string, mount string) error {
+	mounted, _ := vstorage.IsVstorage(mount)
+	if mounted {
+		return nil
+	}
+
+	// not mounted in proper place, prepare mount place and check other
+	// mounts
+	if err := os.MkdirAll(mount, 0755); err != nil {
+		return err
+	}
+
+	v := vstorage.Vstorage{options["clusterName"]}
+	p, _ := v.Mountpoint()
+	if p != "" {
+		return syscall.Mount(p, mount, "", syscall.MS_BIND, "")
+	}
+
+	// not mounted yet, let's mount
+	if options["clusterPassword"] == "" {
+		// no way to mount, report error that we failed to find
+		return errors.New("Failed to find a vstorage cluster mountpoint")
+	}
+
+	if err := v.Auth(options["clusterPassword"]); err != nil {
+		return err
+	}
+	if err := v.Mount(mount); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p Ploop) Mount(target string, options map[string]string) flexvolume.Response {
@@ -67,8 +116,20 @@ func (p Ploop) Mount(target string, options map[string]string) flexvolume.Respon
 		}
 	}
 
+	path := p.path(options)
+
+	if options["clusterName"] != "" {
+		mount := WorkingDir + options["clusterName"]
+		if err := prepareVstorage(options, mount); err != nil {
+			return flexvolume.Response{
+				Status:  flexvolume.StatusFailure,
+				Message: err.Error(),
+			}
+		}
+		path = mount + path
+	}
 	// open the disk descriptor first
-	volume, err := ploop.Open(options["volumePath"] + "/" + options["volumeId"] + "/" + "DiskDescriptor.xml")
+	volume, err := ploop.Open(path + "/" + "DiskDescriptor.xml")
 	if err != nil {
 		return flexvolume.Response{
 			Status:  flexvolume.StatusFailure,
