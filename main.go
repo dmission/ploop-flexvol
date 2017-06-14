@@ -49,15 +49,6 @@ func (p Ploop) path(options map[string]string) string {
 	return path
 }
 
-func (p Ploop) id(options map[string]string) string {
-	id := ""
-	if options["clusterName"] != "" {
-		id += options["clusterName"] + ":"
-	}
-	id += p.path(options)
-	return id
-}
-
 func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 	if options["volumeId"] == "" {
 		return flexvolume.Response{
@@ -68,7 +59,7 @@ func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 
 	return flexvolume.Response{
 		Status:     flexvolume.StatusSuccess,
-		VolumeName: p.id(options),
+		VolumeName: options["volumeId"],
 	}
 }
 
