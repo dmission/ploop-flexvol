@@ -22,18 +22,7 @@ func Commands(fv FlexVolume) []cli.Command {
 			},
 		},
 		{
-			Name:  "attach",
-			Usage: "Attach the volume",
-			Action: func(c *cli.Context) error {
-				var opts map[string]string
-				if err := json.Unmarshal([]byte(c.Args().Get(0)), &opts); err != nil {
-					return err
-				}
-
-				return handle(fv.Attach(opts))
-			},
-		},
-		{Name: "getvolumename",
+			Name:  "getvolumename",
 			Usage: "Get a cluster wide unique volume name for the volume",
 			Action: func(c *cli.Context) error {
 				var opts map[string]string
@@ -44,30 +33,23 @@ func Commands(fv FlexVolume) []cli.Command {
 			},
 		},
 		{
-			Name:  "detach",
+			Name:  "unmount",
 			Usage: "Detach the volume",
 			Action: func(c *cli.Context) error {
-				return handle(fv.Detach(c.Args().Get(0)))
+				return handle(fv.Unmount(c.Args().Get(0)))
 			},
 		},
 		{
-			Name:  "unmountdevice",
-			Usage: "Detach the volume",
-			Action: func(c *cli.Context) error {
-				return handle(fv.UnmountDevice(c.Args().Get(0)))
-			},
-		},
-		{
-			Name:  "mountdevice",
+			Name:  "mount",
 			Usage: "Mount the volume",
 			Action: func(c *cli.Context) error {
 				var opts map[string]string
 
-				if err := json.Unmarshal([]byte(c.Args().Get(2)), &opts); err != nil {
+				if err := json.Unmarshal([]byte(c.Args().Get(1)), &opts); err != nil {
 					return err
 				}
 
-				return handle(fv.MountDevice(c.Args().Get(0), opts))
+				return handle(fv.Mount(c.Args().Get(0), opts))
 			},
 		},
 	}
