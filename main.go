@@ -49,15 +49,6 @@ func (p Ploop) path(options map[string]string) string {
 	return path
 }
 
-func (p Ploop) id(options map[string]string) string {
-	id := ""
-	if options["clusterName"] != "" {
-		id += options["clusterName"] + ":"
-	}
-	id += p.path(options)
-	return id
-}
-
 func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 	if options["volumeId"] == "" {
 		return flexvolume.Response{
@@ -68,7 +59,7 @@ func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 
 	return flexvolume.Response{
 		Status:     flexvolume.StatusSuccess,
-		VolumeName: p.id(options),
+		VolumeName: options["volumeId"],
 	}
 }
 
@@ -78,25 +69,23 @@ func prepareVstorage(options map[string]string, mount string) error {
 		return nil
 	}
 
+	if options["kubernetes.io/secret/clusterPassword"] == "" {
+		return errors.New("Please provide vstorage credentials")
+	}
+
 	// not mounted in proper place, prepare mount place and check other
 	// mounts
 	if err := os.MkdirAll(mount, 0755); err != nil {
 		return err
 	}
 
-	v := vstorage.Vstorage{options["clusterName"]}
+	v := vstorage.Vstorage{options["kubernetes.io/secret/clusterName"]}
 	p, _ := v.Mountpoint()
 	if p != "" {
 		return syscall.Mount(p, mount, "", syscall.MS_BIND, "")
 	}
 
-	// not mounted yet, let's mount
-	if options["clusterPassword"] == "" {
-		// no way to mount, report error that we failed to find
-		return errors.New("Failed to find a vstorage cluster mountpoint")
-	}
-
-	if err := v.Auth(options["clusterPassword"]); err != nil {
+	if err := v.Auth(options["kubernetes.io/secret/clusterPassword"]); err != nil {
 		return err
 	}
 	if err := v.Mount(mount); err != nil {
@@ -118,8 +107,8 @@ func (p Ploop) Mount(target string, options map[string]string) flexvolume.Respon
 
 	path := p.path(options)
 
-	if options["clusterName"] != "" {
-		mount := WorkingDir + options["clusterName"]
+	if options["kubernetes.io/secret/clusterName"] != "" {
+		mount := WorkingDir + options["kubernetes.io/secret/clusterName"]
 		if err := prepareVstorage(options, mount); err != nil {
 			return flexvolume.Response{
 				Status:  flexvolume.StatusFailure,
