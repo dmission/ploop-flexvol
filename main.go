@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"os"
 	"syscall"
@@ -63,14 +64,10 @@ func (p Ploop) GetVolumeName(options map[string]string) flexvolume.Response {
 	}
 }
 
-func prepareVstorage(options map[string]string, mount string) error {
+func prepareVstorage(clusterName, clusterPasswd string, mount string) error {
 	mounted, _ := vstorage.IsVstorage(mount)
 	if mounted {
 		return nil
-	}
-
-	if options["kubernetes.io/secret/clusterPassword"] == "" {
-		return errors.New("Please provide vstorage credentials")
 	}
 
 	// not mounted in proper place, prepare mount place and check other
@@ -79,13 +76,17 @@ func prepareVstorage(options map[string]string, mount string) error {
 		return err
 	}
 
-	v := vstorage.Vstorage{options["kubernetes.io/secret/clusterName"]}
+	v := vstorage.Vstorage{clusterName}
 	p, _ := v.Mountpoint()
 	if p != "" {
 		return syscall.Mount(p, mount, "", syscall.MS_BIND, "")
 	}
 
-	if err := v.Auth(options["kubernetes.io/secret/clusterPassword"]); err != nil {
+	if clusterPasswd == "" {
+		return errors.New("Please provide vstorage credentials")
+	}
+
+	if err := v.Auth(clusterPasswd); err != nil {
 		return err
 	}
 	if err := v.Mount(mount); err != nil {
@@ -108,8 +109,26 @@ func (p Ploop) Mount(target string, options map[string]string) flexvolume.Respon
 	path := p.path(options)
 
 	if options["kubernetes.io/secret/clusterName"] != "" {
-		mount := WorkingDir + options["kubernetes.io/secret/clusterName"]
-		if err := prepareVstorage(options, mount); err != nil {
+		_cluster, err := base64.StdEncoding.DecodeString(options["kubernetes.io/secret/clusterName"])
+		if err != nil {
+			return flexvolume.Response{
+				Status:  flexvolume.StatusFailure,
+				Message: fmt.Sprintf("Unable to decode a cluster name: %v", err.Error()),
+			}
+		}
+		cluster := string(_cluster)
+
+		_passwd, err := base64.StdEncoding.DecodeString(options["kubernetes.io/secret/clusterPassword"])
+		if err != nil {
+			return flexvolume.Response{
+				Status:  flexvolume.StatusFailure,
+				Message: fmt.Sprintf("Unable to decode a cluster password: %v", err.Error()),
+			}
+		}
+		passwd := string(_passwd)
+
+		mount := WorkingDir + cluster
+		if err := prepareVstorage(cluster, passwd, mount); err != nil {
 			return flexvolume.Response{
 				Status:  flexvolume.StatusFailure,
 				Message: err.Error(),
