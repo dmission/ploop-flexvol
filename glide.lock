@@ -1,5 +1,5 @@
-hash: a2dd19f90b6ed0e1e202a909826c136843b3d8703af5b40f984cb9c18422c486
-updated: 2017-03-07T03:24:30.789429162+03:00
+hash: e98333d8dc05e2f608d7d29a94315b5459f3262cb4cad6fa6a346d5c32bdfe20
+updated: 2017-06-15T05:33:42.400781016+03:00
 imports:
 - name: github.com/dustin/go-humanize
   version: 259d2a102b871d17f30e3cd9881a642961a1e486
@@ -7,6 +7,8 @@ imports:
   version: b65378104ef0f49af77d6f73d87da7e78d0f8252
 - name: github.com/kolyshkin/goploop-cli
   version: 5365b446a713e31ac4f2026b05a6dac27bbdf21c
+- name: github.com/sirupsen/logrus
+  version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/urfave/cli
   version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
 testImports: []
