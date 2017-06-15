@@ -30,24 +30,8 @@ func main() {
 	}
 	app.Version = "0.2a"
 
-	fd, err := syscall.Dup(syscall.Stdout)
-	if err != nil {
-		panic(err)
-	}
+	flexvolume.SetRespFile(os.NewFile((uintptr)(3), "RespFile"))
 
-	flexvolume.SetRespFile(os.NewFile((uintptr)(fd), "RespFile"))
-
-	log, err := os.OpenFile("/var/log/ploop-flexvol.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := syscall.Dup2(int(log.Fd()), syscall.Stdout); err != nil {
-		panic(err)
-	}
-	if err := syscall.Dup2(int(log.Fd()), syscall.Stderr); err != nil {
-		panic(err)
-	}
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.DebugLevel)
 
