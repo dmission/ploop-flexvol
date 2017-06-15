@@ -9,10 +9,10 @@ const (
 )
 
 type FlexVolume interface {
-	Init() Response
-	Mount(string, map[string]string) Response
-	Unmount(string) Response
-	GetVolumeName(map[string]string) Response
+	Init() (*Response, error)
+	Mount(string, map[string]string) (*Response, error)
+	Unmount(string) (*Response, error)
+	GetVolumeName(map[string]string) (*Response, error)
 }
 
 type Response struct {
