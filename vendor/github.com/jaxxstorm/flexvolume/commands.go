@@ -3,8 +3,17 @@ package flexvolume
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
+
+var respFile *os.File = os.Stdout
+
+func SetRespFile(f *os.File) {
+	respFile = f
+}
 
 func CommandNotFound(c *cli.Context, command string) {
 	handle(&Response{
@@ -61,9 +70,9 @@ func Commands(fv FlexVolume) []cli.Command {
 func handle(resp *Response, err error) error {
 	if err != nil {
 		resp = &Response{
-			Status: StatusFailure,
+			Status:  StatusFailure,
 			Message: err.Error(),
-		}	
+		}
 	}
 
 	// Format the output as JSON.
@@ -71,6 +80,7 @@ func handle(resp *Response, err error) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(output))
+	fmt.Fprintln(respFile, string(output))
+	logrus.Debugf(string(output))
 	return nil
 }
