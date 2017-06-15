@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	"github.com/golang/glog"
 )
 
 var respFile *os.File = os.Stdout
@@ -81,6 +82,6 @@ func handle(resp *Response, err error) error {
 		return err
 	}
 	fmt.Fprintln(respFile, string(output))
-	logrus.Debugf(string(output))
+	glog.Infof("Response: %s", string(output))
 	return nil
 }

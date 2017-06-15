@@ -3,18 +3,23 @@ package main
 import (
 	"encoding/base64"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"syscall"
 
 	"github.com/jaxxstorm/flexvolume"
 	"github.com/kolyshkin/goploop-cli"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"github.com/virtuozzo/ploop-flexvol/vstorage"
+
+	"github.com/golang/glog"
 )
 
 func main() {
+
+	flag.Parse()
+
 	app := cli.NewApp()
 	app.Name = "ploop flexvolume"
 	app.Usage = "Mount ploop volumes in kubernetes using the flexvolume driver"
@@ -32,11 +37,8 @@ func main() {
 
 	flexvolume.SetRespFile(os.NewFile((uintptr)(3), "RespFile"))
 
-	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(logrus.DebugLevel)
-
-	logrus.Debugf("New request: %v", os.Args)
-	app.Run(os.Args)
+	glog.Infof("Request: %v", flag.Args())
+	app.Run(flag.Args())
 }
 
 type Ploop struct{}
