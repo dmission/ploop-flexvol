@@ -129,3 +129,24 @@ ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-tes
 * **vzsTier**=0-3
 
      Storage tier for file replicas.
+
+### Logging
+
+By default, ploop-flexvol redirects all logging data to the systemd-journald
+service. If you want to use another way to collect logging data, you can create
+a wrapper script. It has to redirect stdout to the 3 descriptor and execute the
+plugin binary according with the following rules:
+
+```
+./ploop wrapper [glog flags] -- ploop [plugin options]
+```
+
+Here is an example to save logging data into a file:
+```
+#!/bin/sh
+
+exec 3>&1
+
+`dirname $0`/ploop.bin wrapper -logtostderr -- ploop "$@" &>> /var/log/ploop-flexvol.log
+
+```
