@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"syscall"
 
 	"github.com/jaxxstorm/flexvolume"
@@ -16,9 +17,66 @@ import (
 	"github.com/golang/glog"
 )
 
-func main() {
+func setup_journld() ([]string, *exec.Cmd, error) {
+	fd, err := syscall.Dup(syscall.Stdout)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	flag.Parse()
+	flexvolume.SetRespFile(os.NewFile((uintptr)(fd), "RespFile"))
+
+	flag.CommandLine.Parse([]string{"-logtostderr"})
+
+	cmd := exec.Command("systemd-cat", "--identifier", "ploop-flexvol")
+	if err != nil {
+		return nil, nil, err
+	}
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return nil, nil, err
+	}
+	cmd.Stdin = pr
+	defer pr.Close()
+	defer pw.Close()
+
+	if err := syscall.Dup2(int(pw.Fd()), syscall.Stdout); err != nil {
+		return nil, nil, err
+	}
+	if err := syscall.Dup2(syscall.Stdout, syscall.Stderr); err != nil {
+		return nil, nil, err
+	}
+	if err := cmd.Start(); err != nil {
+		return nil, nil, err
+	}
+	return os.Args, cmd, nil
+}
+
+func setup_wrapper_logging() ([]string, *exec.Cmd, error) {
+	flexvolume.SetRespFile(os.NewFile((uintptr)(3), "RespFile"))
+	flag.CommandLine.Parse(os.Args[2:])
+	return flag.CommandLine.Args(), nil, nil
+}
+
+func setup_logging() ([]string, *exec.Cmd, error) {
+	if os.Args[1] == "wrapper" {
+		return setup_wrapper_logging()
+	}
+
+	return setup_journld()
+}
+
+func main() {
+	args, cmd, err := setup_logging()
+	if err != nil {
+		panic(err)
+	}
+	if cmd != nil {
+		defer func() {
+			syscall.Close(syscall.Stdout)
+			syscall.Close(syscall.Stderr)
+			cmd.Wait()
+		}()
+	}
 
 	app := cli.NewApp()
 	app.Name = "ploop flexvolume"
@@ -35,10 +93,8 @@ func main() {
 	}
 	app.Version = "0.2a"
 
-	flexvolume.SetRespFile(os.NewFile((uintptr)(3), "RespFile"))
-
-	glog.Infof("Request: %v", flag.Args())
-	app.Run(flag.Args())
+	glog.Infof("Request: %v", args)
+	app.Run(args)
 }
 
 type Ploop struct{}
