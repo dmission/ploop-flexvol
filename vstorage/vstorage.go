@@ -81,11 +81,17 @@ func (v *Vstorage) Auth(password string) error {
 	b.Write([]byte(password))
 	auth.Stdin = &b
 	_, err := auth.Output()
-	return fmt.Errorf("Unable to authenticate the node in %s: %v", v.Name, err)
+	if err != nil {
+		return fmt.Errorf("Unable to authenticate the node in %s: %v", v.Name, err)
+	}
+	return nil
 }
 
 func (v *Vstorage) Mount(where string) error {
 	mount := exec.Command("vstorage-mount", "-c", v.Name, where)
 	_, err := mount.Output()
-	return fmt.Errorf("Unable to mount %s in %s: %v", v.Name, where, err)
+	if err != nil {
+		return fmt.Errorf("Unable to mount %s in %s: %v", v.Name, where, err)
+	}
+	return nil
 }
