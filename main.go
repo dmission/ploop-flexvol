@@ -17,7 +17,7 @@ import (
 	"github.com/golang/glog"
 )
 
-func setup_journld() ([]string, *exec.Cmd, error) {
+func setupJournld() ([]string, *exec.Cmd, error) {
 	fd, err := syscall.Dup(syscall.Stdout)
 	if err != nil {
 		return nil, nil, err
@@ -27,7 +27,9 @@ func setup_journld() ([]string, *exec.Cmd, error) {
 
 	flexvolume.SetRespFile(os.NewFile((uintptr)(fd), "RespFile"))
 
-	flag.CommandLine.Parse([]string{"-logtostderr"})
+	if err := flag.CommandLine.Parse([]string{"-logtostderr"}); err != nil {
+		return nil, nil, err
+	}
 
 	cmd := exec.Command("systemd-cat", "--identifier", "ploop-flexvol")
 	if err != nil {
@@ -53,23 +55,25 @@ func setup_journld() ([]string, *exec.Cmd, error) {
 	return os.Args, cmd, nil
 }
 
-func setup_wrapper_logging() ([]string, *exec.Cmd, error) {
+func setupWrapperLogging() ([]string, *exec.Cmd, error) {
 	syscall.CloseOnExec(3)
 	flexvolume.SetRespFile(os.NewFile((uintptr)(3), "RespFile"))
-	flag.CommandLine.Parse(os.Args[2:])
+	if err := flag.CommandLine.Parse(os.Args[2:]); err != nil {
+		return nil, nil, err
+	}
 	return flag.CommandLine.Args(), nil, nil
 }
 
-func setup_logging() ([]string, *exec.Cmd, error) {
+func setupLogging() ([]string, *exec.Cmd, error) {
 	if os.Args[1] == "wrapper" {
-		return setup_wrapper_logging()
+		return setupWrapperLogging()
 	}
 
-	return setup_journld()
+	return setupJournld()
 }
 
 func main() {
-	args, cmd, err := setup_logging()
+	args, cmd, err := setupLogging()
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +108,7 @@ func main() {
 
 type Ploop struct{}
 
-const WorkingDir = "/var/run/ploop-flexvol/"
+const workingDir = "/var/run/ploop-flexvol/"
 
 func (p Ploop) Init() (*flexvolume.Response, error) {
 	return &flexvolume.Response{
@@ -141,7 +145,7 @@ func prepareVstorage(clusterName, clusterPasswd string, mount string) error {
 
 	// not mounted in proper place, prepare mount place and check other
 	// mounts
-	if err := os.MkdirAll(mount, 0755); err != nil {
+	if err := os.MkdirAll(mount, 0700); err != nil {
 		return err
 	}
 
@@ -167,7 +171,7 @@ func prepareVstorage(clusterName, clusterPasswd string, mount string) error {
 
 func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Response, error) {
 	// make the target directory we're going to mount to
-	err := os.MkdirAll(target, 0755)
+	err := os.MkdirAll(target, 0700)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +191,7 @@ func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Resp
 		}
 		passwd := string(_passwd)
 
-		mount := WorkingDir + cluster
+		mount := workingDir + cluster
 		if err := prepareVstorage(cluster, passwd, mount); err != nil {
 			return nil, err
 		}
