@@ -132,6 +132,9 @@ ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-tes
 
 ### Logging
 
+**NOTE:** high verbosity logging level may include some secret data, so it's strongly
+recomended to avoid using verbosity level >= 4 for production systems
+
 By default, ploop-flexvol redirects all logging data to the systemd-journald
 service. If you want to use another way to collect logging data, you can create
 a wrapper script. It has to redirect stdout to the 3 descriptor and execute the

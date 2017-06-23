@@ -96,7 +96,9 @@ func main() {
 	}
 	app.Version = "0.2a"
 
-	glog.Infof("Request: %v", args)
+	if glog.V(4) {
+		glog.Infof("Request: %v", args)
+	}
 	app.Run(args)
 }
 
