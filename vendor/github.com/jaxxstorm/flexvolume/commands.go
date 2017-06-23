@@ -62,6 +62,26 @@ func Commands(fv FlexVolume) []cli.Command {
 				return handle(fv.Mount(c.Args().Get(0), opts))
 			},
 		},
+		{
+			Name:  "Detach",
+			Usage: "Detach the volume",
+			Action: func(c *cli.Context) error {
+				return handle(fv.Detach(c.Args().Get(0)))
+			},
+		},
+		{
+			Name:  "Attach",
+			Usage: "Attach the volume",
+			Action: func(c *cli.Context) error {
+				var opts map[string]string
+
+				if err := json.Unmarshal([]byte(c.Args().Get(0)), &opts); err != nil {
+					return err
+				}
+
+				return handle(fv.Attach(c.Args().Get(1), opts))
+			},
+		},
 	}
 }
 

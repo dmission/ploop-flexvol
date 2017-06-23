@@ -12,6 +12,8 @@ type FlexVolume interface {
 	Init() (*Response, error)
 	Mount(string, map[string]string) (*Response, error)
 	Unmount(string) (*Response, error)
+	Attach(string, map[string]string) (*Response, error)
+	Detach(string) (*Response, error)
 	GetVolumeName(map[string]string) (*Response, error)
 }
 
