@@ -243,3 +243,17 @@ func (p Ploop) Unmount(mount string) (*flexvolume.Response, error) {
 		Message: "Successfully unmounted the ploop volume",
 	}, nil
 }
+
+func (p Ploop) Attach(nodename string, options map[string]string) (*flexvolume.Response, error) {
+	return &flexvolume.Response{
+		Status:  flexvolume.StatusSuccess,
+		Message: "Successfully attached the ploop volume",
+	}, nil
+}
+
+func (p Ploop) Detach(nodename string) (*flexvolume.Response, error) {
+	return &flexvolume.Response{
+		Status:  flexvolume.StatusSuccess,
+		Message: "Successfully detached the ploop volume",
+	}, nil
+}
