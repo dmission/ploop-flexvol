@@ -23,6 +23,8 @@ func setup_journld() ([]string, *exec.Cmd, error) {
 		return nil, nil, err
 	}
 
+	syscall.CloseOnExec(fd)
+
 	flexvolume.SetRespFile(os.NewFile((uintptr)(fd), "RespFile"))
 
 	flag.CommandLine.Parse([]string{"-logtostderr"})
@@ -52,6 +54,7 @@ func setup_journld() ([]string, *exec.Cmd, error) {
 }
 
 func setup_wrapper_logging() ([]string, *exec.Cmd, error) {
+	syscall.CloseOnExec(3)
 	flexvolume.SetRespFile(os.NewFile((uintptr)(3), "RespFile"))
 	flag.CommandLine.Parse(os.Args[2:])
 	return flag.CommandLine.Args(), nil, nil
