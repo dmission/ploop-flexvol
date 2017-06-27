@@ -66,7 +66,7 @@ func Commands(fv FlexVolume) []cli.Command {
 			Name:  "Detach",
 			Usage: "Detach the volume",
 			Action: func(c *cli.Context) error {
-				return handle(fv.Detach(c.Args().Get(0)))
+				return handle(fv.Detach(c.Args().Get(0), c.Args().Get(1)))
 			},
 		},
 		{

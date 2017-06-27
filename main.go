@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"strings"
 
 	"github.com/jaxxstorm/flexvolume"
 	"github.com/kolyshkin/goploop-cli"
@@ -133,7 +134,7 @@ func (p Ploop) GetVolumeName(options map[string]string) (*flexvolume.Response, e
 
 	return &flexvolume.Response{
 		Status:     flexvolume.StatusSuccess,
-		VolumeName: options["volumeID"],
+		VolumeName: options["clusterName"] + "|" + p.path(options),
 	}, nil
 }
 
@@ -251,7 +252,13 @@ func (p Ploop) Attach(nodename string, options map[string]string) (*flexvolume.R
 	}, nil
 }
 
-func (p Ploop) Detach(nodename string) (*flexvolume.Response, error) {
+func (p Ploop) Detach(device string, nodename string) (*flexvolume.Response, error) {
+	token := strings.Split(device, "|")
+	v := vstorage.Vstorage{token[0]}
+	if err := v.Revoke(token[1]); err != nil {
+		return nil, err
+	}
+
 	return &flexvolume.Response{
 		Status:  flexvolume.StatusSuccess,
 		Message: "Successfully detached the ploop volume",
