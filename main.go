@@ -116,18 +116,18 @@ func (p Ploop) path(options map[string]string) string {
 	if options["volumePath"] != "" {
 		path += options["volumePath"] + "/"
 	}
-	path += options["volumeId"]
+	path += options["volumeID"]
 	return path
 }
 
 func (p Ploop) GetVolumeName(options map[string]string) (*flexvolume.Response, error) {
-	if options["volumeId"] == "" {
+	if options["volumeID"] == "" {
 		return nil, fmt.Errorf("Must specify a volume id")
 	}
 
 	return &flexvolume.Response{
 		Status:     flexvolume.StatusSuccess,
-		VolumeName: options["volumeId"],
+		VolumeName: options["volumeID"],
 	}, nil
 }
 
