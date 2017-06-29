@@ -61,7 +61,7 @@ spec:
     flexVolume:
       driver: "virtuozzo/ploop" # this must match your vendor dir
       options:
-        volumeId: "golang-ploop-test"
+        volumeID: "golang-ploop-test"
         size: "10G"
         volumePath: "/vstorage/storage_pool/kubernetes"
 ```
@@ -79,7 +79,7 @@ ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-tes
 * **volumePath**
 
   a path to a virtuozzo storage directory where ploop image is located
-* **volumeId**
+* **volumeID**
 
    an unique name for a ploop image
 * **size**=[0-9]*[KMG]
