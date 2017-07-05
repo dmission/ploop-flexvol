@@ -6,8 +6,8 @@ ploop: $(SOURCES)
 	go build -o ploop .
 
 install: ploop
-	mkdir -p $(DESTDIR)/usr/libexec/kubernetes/kubelet-plugins/volume/exec/virtuozzo~ploop/ploop
-	cp ploop $(DESTDIR)/usr/libexec/kubernetes/kubelet-plugins/volume/exec/virtuozzo~ploop/ploop
+	mkdir -p $(DESTDIR)/usr/libexec/kubernetes/kubelet-plugins/volume/exec/virtuozzo~ploop/
+	cp ploop $(DESTDIR)/usr/libexec/kubernetes/kubelet-plugins/volume/exec/virtuozzo~ploop/
 
 wrapper-journald: ploop
 	cp ploop-journld.sh /usr/libexec/kubernetes/kubelet-plugins/volume/exec/virtuozzo~ploop/ploop
