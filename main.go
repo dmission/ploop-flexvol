@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
-	"strings"
 
 	"github.com/jaxxstorm/flexvolume"
 	"github.com/kolyshkin/goploop-cli"
@@ -179,6 +178,11 @@ func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Resp
 
 	path := p.path(options)
 
+	readonly := false
+	if options["kubernetes.io/readwrite"] == "ro" {
+		readonly = true
+	}
+
 	if options["kubernetes.io/secret/clusterName"] != "" {
 		_cluster, err := base64.StdEncoding.DecodeString(options["kubernetes.io/secret/clusterName"])
 		if err != nil {
@@ -197,6 +201,17 @@ func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Resp
 			return nil, err
 		}
 		path = mount + path
+
+		if !readonly {
+			// Node denial may lead to vstorage freezes. vstorage revoke operation before writing
+			// data will prevent this cases. Detach method is more suitable for it, but currently
+			// volume name is auto generated and does not include all neccessary credentials to
+			// perform volume revoke. It should be fixed when k8s community fixed getvolumename call
+			v := vstorage.Vstorage{cluster}
+			if err := v.Revoke(path); err != nil {
+				return nil, err
+			}
+		}
 	}
 	// open the disk descriptor first
 	volume, err := ploop.Open(path + "/" + "DiskDescriptor.xml")
@@ -207,11 +222,6 @@ func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Resp
 
 	if m, _ := volume.IsMounted(); !m {
 		// If it's mounted, let's mount it!
-
-		readonly := false
-		if options["kubernetes.io/readwrite"] == "ro" {
-			readonly = true
-		}
 
 		mp := ploop.MountParam{Target: target, Readonly: readonly}
 
@@ -248,19 +258,13 @@ func (p Ploop) Unmount(mount string) (*flexvolume.Response, error) {
 func (p Ploop) Attach(nodename string, options map[string]string) (*flexvolume.Response, error) {
 	return &flexvolume.Response{
 		Status:  flexvolume.StatusSuccess,
-		Message: "Successfully attached the ploop volume",
+		Message: fmt.Sprintf("Successfully attached the ploop volume to node %s", nodename),
 	}, nil
 }
 
 func (p Ploop) Detach(device string, nodename string) (*flexvolume.Response, error) {
-	token := strings.Split(device, "|")
-	v := vstorage.Vstorage{token[0]}
-	if err := v.Revoke(token[1]); err != nil {
-		return nil, err
-	}
-
 	return &flexvolume.Response{
 		Status:  flexvolume.StatusSuccess,
-		Message: "Successfully detached the ploop volume",
+		Message: fmt.Sprintf("Successfully detached the ploop volume %s from node %s", device, nodename),
 	}, nil
 }
