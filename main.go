@@ -236,11 +236,7 @@ func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Resp
 		}, nil
 	} else {
 
-		return &flexvolume.Response{
-			Status:  flexvolume.StatusSuccess,
-			Message: "Ploop volume already mounted",
-		}, nil
-
+		return nil, fmt.Errorf("Ploop volume already mounted")
 	}
 }
 
