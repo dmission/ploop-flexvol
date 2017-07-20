@@ -170,12 +170,6 @@ func prepareVstorage(clusterName, clusterPasswd string, mount string) error {
 }
 
 func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Response, error) {
-	// make the target directory we're going to mount to
-	err := os.MkdirAll(target, 0700)
-	if err != nil {
-		return nil, err
-	}
-
 	path := p.path(options)
 
 	readonly := false
