@@ -191,6 +191,10 @@ func UmountByDevice(dev string) error {
 	return ploop("umount", "-d", dev)
 }
 
+func UmountByMount(mountpoint string) error {
+	return ploop("umount", "-m", mountpoint)
+}
+
 // Resize changes the ploop size. Offline flag is ignored
 // by this implementation, as ploop tool automatically chooses
 // whether do to offline resize (if device is not mounted).

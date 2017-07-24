@@ -5,19 +5,21 @@ type Status string
 const (
 	StatusSuccess      Status = "Success"
 	StatusFailure      Status = "Failure"
-	StatusNotSupported Status = "Not Supported"
+	StatusNotSupported Status = "Not supported"
 )
 
 type FlexVolume interface {
-	Init() Response
-	Attach(map[string]string) Response
-	Detach(string) Response
-	Mount(string, string, map[string]string) Response
-	Unmount(string) Response
+	Init() (*Response, error)
+	Mount(string, map[string]string) (*Response, error)
+	Unmount(string) (*Response, error)
+	Attach(string, map[string]string) (*Response, error)
+	Detach(string, string) (*Response, error)
+	GetVolumeName(map[string]string) (*Response, error)
 }
 
 type Response struct {
-	Status  Status `json:"status"`
-	Message string `json:"message"`
-	Device  string `json:"device,omitempty"`
+	Status     Status `json:"status"`
+	Message    string `json:"message,omitempty"`
+	Device     string `json:"device,omitempty"`
+	VolumeName string `json:"volumeName,omitempty"`
 }

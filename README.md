@@ -61,14 +61,14 @@ spec:
     flexVolume:
       driver: "virtuozzo/ploop" # this must match your vendor dir
       options:
-        volumeId: "golang-ploop-test"
+        volumeID: "golang-ploop-test"
         size: "10G"
         volumePath: "/vstorage/storage_pool/kubernetes"
 ```
 
-This will create a ploop volume `/vstorage/storage_pool/kubernetes/golang-ploop-test`. The block device which will be mounted will be at `/vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-test` and the `DiskDescriptor.xml` will be located at /vstorage/storage_pool/kubernetes/golang-ploop-test/DiskDescriptior.xml`
+This will mount a block device from a ploop image located at `/vstorage/storage_pool/kubernetes/golang-ploop-test` directory.
 
-You can verify the ploop volume was created by finding the node where your pod was scheduled by running `ploop list`:
+You can verify the ploop volume was mounted by finding the node where your pod was scheduled by running `ploop list`:
 
 ```
 # ploop list
@@ -78,8 +78,8 @@ ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-tes
 #### Options
 * **volumePath**
 
-  a path to a virtuozzo storage directory where ploop will be created
-* **volumeId**
+  a path to a virtuozzo storage directory where ploop image is located
+* **volumeID**
 
    an unique name for a ploop image
 * **size**=[0-9]*[KMG]
@@ -129,3 +129,27 @@ ploop18115  /vstorage/storage_pool/kubernetes/golang-ploop-test/golang-ploop-tes
 * **vzsTier**=0-3
 
      Storage tier for file replicas.
+
+### Logging
+
+**NOTE:** high verbosity logging level may include some secret data, so it's strongly
+recomended to avoid using verbosity level >= 4 for production systems
+
+By default, ploop-flexvol redirects all logging data to the systemd-journald
+service. If you want to use another way to collect logging data, you can create
+a wrapper script. It has to redirect stdout to the 3 descriptor and execute the
+plugin binary according with the following rules:
+
+```
+./ploop wrapper [glog flags] -- ploop [plugin options]
+```
+
+Here is an example to save logging data into a file:
+```
+#!/bin/sh
+
+exec 3>&1
+
+`dirname $0`/ploop.bin wrapper -logtostderr -- ploop "$@" &>> /var/log/ploop-flexvol.log
+
+```

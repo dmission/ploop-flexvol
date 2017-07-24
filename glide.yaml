@@ -8,3 +8,4 @@ import:
   version: 5365b446a713e31ac4f2026b05a6dac27bbdf21c
 - package: github.com/urfave/cli
   version: ^1.19.1
+- package: github.com/golang/glog
