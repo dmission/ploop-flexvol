@@ -1,12 +1,14 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 
 	"github.com/jaxxstorm/flexvolume"
@@ -169,6 +171,45 @@ func prepareVstorage(clusterName, clusterPasswd string, mount string) error {
 	return nil
 }
 
+func (p Ploop) mountPloop(target, path string, volume *ploop.Ploop, readonly bool) (string, error) {
+	target = filepath.Clean(target)
+	path = filepath.Clean(path)
+
+	statePath := fmt.Sprintf("%s/mounts/ploop-%x", workingDir, md5.Sum([]byte(path)))
+	mntPath := fmt.Sprintf("%s/mnt", statePath)
+
+	if err := os.MkdirAll(mntPath, 0700); err != nil {
+		return "", err
+	}
+	mp := ploop.MountParam{Target: mntPath, Readonly: readonly}
+
+	_, err := volume.Mount(&mp)
+	if err != nil {
+		os.Remove(mntPath)
+		os.Remove(statePath)
+		return "", err
+	}
+
+	return statePath, nil
+}
+
+func (p Ploop) umountPloop(statePath string) error {
+	mountPath := fmt.Sprintf("%s/mnt", statePath)
+	if err := ploop.UmountByMount(mountPath); err != nil {
+		return err
+	}
+
+	if err := os.Remove(mountPath); err != nil {
+		return fmt.Errorf("Unable to remove %s: %v", mountPath, err)
+	}
+
+	if err := os.Remove(statePath); err != nil {
+		return fmt.Errorf("Unable to remove %s: %v", statePath, err)
+	}
+
+	return nil
+}
+
 func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Response, error) {
 	path := p.path(options)
 
@@ -215,13 +256,34 @@ func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Resp
 	defer volume.Close()
 
 	if m, _ := volume.IsMounted(); !m {
-		// If it's mounted, let's mount it!
+		stateDir := fmt.Sprintf("%s/mounts", workingDir)
+		if err := os.MkdirAll(stateDir, 0700); err != nil {
+			return nil, err
+		}
 
-		mp := ploop.MountParam{Target: target, Readonly: readonly}
-
-		_, err := volume.Mount(&mp)
+		statePath, err := p.mountPloop(target, path, &volume, readonly)
 		if err != nil {
 			return nil, err
+		}
+
+		target = filepath.Clean(target)
+
+		// We need to know a mount point to make snapshots, so
+		// we create our mount point and then bind-mount it to "target"
+		// If it's mounted, let's mount it!
+		mntLink := fmt.Sprintf("%s/kube-%x", stateDir, md5.Sum([]byte(target)))
+
+		glog.Infof("Create symlink %s %s", statePath, mntLink)
+		if err := os.Symlink(statePath, mntLink); err != nil {
+			p.umountPloop(statePath)
+			return nil, err
+		}
+
+		mntPath := fmt.Sprintf("%s/mnt", statePath)
+		if err := syscall.Mount(mntPath, target, "", syscall.MS_BIND, ""); err != nil {
+			p.umountPloop(statePath)
+			os.Remove(mntLink)
+			return nil, fmt.Errorf("Unable to bind mount %s -> %s: %v", mntPath, target, err)
 		}
 
 		return &flexvolume.Response{
@@ -235,7 +297,24 @@ func (p Ploop) Mount(target string, options map[string]string) (*flexvolume.Resp
 }
 
 func (p Ploop) Unmount(mount string) (*flexvolume.Response, error) {
-	if err := ploop.UmountByMount(mount); err != nil {
+	if err := syscall.Unmount(mount, 0); err != nil {
+		return nil, err
+	}
+
+	mount = filepath.Clean(mount)
+
+	mntLink := fmt.Sprintf("%s/mounts/kube-%x", workingDir, md5.Sum([]byte(mount)))
+	statePath, err := os.Readlink(mntLink)
+	if err != nil {
+		return nil, err
+	}
+
+	glog.Infof("Umount %s(%s)", statePath, mntLink)
+	if err := p.umountPloop(statePath); err != nil {
+		return nil, err
+	}
+
+	if err := os.Remove(mntLink); err != nil {
 		return nil, err
 	}
 
