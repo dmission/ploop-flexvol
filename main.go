@@ -74,6 +74,18 @@ func setupLogging() ([]string, *exec.Cmd, error) {
 	return setupJournld()
 }
 
+func setupEnvironment() error {
+	// prefer local ploop binary
+	bin := filepath.Dir(os.Args[0]) + "/bin"
+	pathEnv, _ := os.LookupEnv("PATH")
+	pathEnv = bin + ":" + pathEnv
+	err := os.Setenv("PATH", pathEnv)
+	if err != nil {
+		return err
+	}
+	return os.Setenv("LD_LIBRARY_PATH", bin)
+}
+
 func main() {
 	args, cmd, err := setupLogging()
 	if err != nil {
@@ -85,6 +97,11 @@ func main() {
 			syscall.Close(syscall.Stderr)
 			cmd.Wait()
 		}()
+	}
+
+	err = setupEnvironment()
+	if err != nil {
+		panic(err)
 	}
 
 	app := cli.NewApp()
